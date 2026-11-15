@@ -50,7 +50,7 @@ public class PdfController {
         return Map.of("success", true, "fileName", fileName, "userId", userId, "chunks", chunks);
     }
 
-    @PostMapping(value = "/chat", produces = "text/html;charset=utf-8")
+    @RequestMapping(value = "/chat", produces = "text/html;charset=utf-8")
     public Flux<String> chat(String prompt, String chatId,
                              @RequestParam(defaultValue = "demo-user") String userId) {
         chatHistoryRepository.save(TYPE, chatId);

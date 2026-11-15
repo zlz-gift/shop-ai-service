@@ -23,7 +23,7 @@ public class CustomerServiceController {
     /**
      * 售后客服，流式返回（云端百炼 + 商城工具）。
      */
-    @PostMapping(value = "/service", produces = "text/html;charset=utf-8")
+    @RequestMapping(value = "/service", produces = "text/html;charset=utf-8")
     public Flux<String> service(String prompt, String chatId) {
         chatHistoryRepository.save(TYPE, chatId);
         return serviceChatClient.prompt()

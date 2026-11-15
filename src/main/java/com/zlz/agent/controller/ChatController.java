@@ -23,7 +23,7 @@ public class ChatController {
     /**
      * 通用对话，流式返回（本地 Ollama）。
      */
-    @PostMapping(value = "/chat", produces = "text/html;charset=utf-8")
+    @RequestMapping(value = "/chat", produces = "text/html;charset=utf-8")
     public Flux<String> chat(String prompt, String chatId) {
         chatHistoryRepository.save(TYPE, chatId);
         return chatClient.prompt()
