@@ -14,6 +14,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * 交给模型自主调用的商城工具。
@@ -33,31 +34,54 @@ public class ShopTools {
     @Tool(description = "根据订单号查询订单详情：订单状态、总金额、下单时间和商品明细（名称/单价/数量）")
     public String queryOrder(
             @ToolParam(description = "订单号，纯数字，例如 1001") Integer orderId) {
-        OrderDetailVO detail = orderService.detail(orderId);
-        if (detail == null) {
-            return "未查询到订单号为 " + orderId + " 的订单，请让用户核对订单号后重试";
-        }
-        return toJson(detail);
+        return guard("queryOrder", () -> {
+            OrderDetailVO detail = orderService.detail(orderId);
+            if (detail == null) {
+                return "未查询到订单号为 " + orderId + " 的订单，请让用户核对订单号后重试";
+            }
+            return toJson(detail);
+        });
     }
 
     @Tool(description = "按商品名称关键词或分类查询在售商品，用于回答商品相关咨询；两个参数都可以不传，最多返回 10 条")
     public String queryProducts(
             @ToolParam(description = "商品名称关键词，可为空", required = false) String keyword,
             @ToolParam(description = "商品分类，可为空", required = false) String category) {
-        List<ProductVO> products = productService.search(keyword, category).stream()
-                .map(ProductVO::from)
-                .toList();
-        if (products.isEmpty()) {
-            return "没有找到符合条件的商品，请让用户换个关键词或分类再试";
-        }
-        return toJson(products);
+        return guard("queryProducts", () -> {
+            List<ProductVO> products = productService.search(keyword, category).stream()
+                    .map(ProductVO::from)
+                    .toList();
+            if (products.isEmpty()) {
+                return "没有找到符合条件的商品，请让用户换个关键词或分类再试";
+            }
+            return toJson(products);
+        });
     }
 
     @Tool(description = "提交退款申请并返回售后工单号。只有当用户明确要求退款、提供了订单号、并说明了退款原因时才调用")
     public String applyRefund(
             @ToolParam(description = "订单号，纯数字") Integer orderId,
             @ToolParam(description = "退款原因，用一句话概括用户给出的理由") String reason) {
-        return afterSaleService.applyRefund(orderId, reason);
+        return guard("applyRefund", () -> afterSaleService.applyRefund(orderId, reason));
+    }
+
+    /**
+     * 工具执行的统一兜底：异常一律转成可读文本回填给模型，而不是抛出去。
+     * <p>
+     * 为什么必须兜：工具异常抛进 Spring AI 的工具执行器会让<b>整轮对话失败</b>，
+     * 用户只会看到一条错误；兜住之后模型能自己决定——换个方式重试、或者如实告诉用户「系统忙，稍后再试」。
+     * <p>
+     * 返回给模型的是异常类型而不是完整堆栈：堆栈里有 SQL、表名、连接串，
+     * 属于不该出现在对话上下文里的信息。完整堆栈只进服务端日志。
+     */
+    private String guard(String toolName, Supplier<String> action) {
+        try {
+            return action.get();
+        } catch (Exception e) {
+            log.warn("[工具异常] {} 执行失败", toolName, e);
+            return "工具 " + toolName + " 执行出错（" + e.getClass().getSimpleName()
+                    + "）。请换一种方式重试，或告知用户系统暂时不可用、稍后再试，不要编造结果。";
+        }
     }
 
     private String toJson(Object value) {
