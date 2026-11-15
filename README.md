@@ -13,7 +13,7 @@
 | 层 | 选型 |
 |---|---|
 | 语言 / 框架 | Java 21、Spring Boot 3.5.11 |
-| 模型接入 | Spring AI 1.1.7：本地 Ollama（`deepseek-r1:1.5b`）+ 阿里云百炼（OpenAI 兼容协议，`text-embedding-v3` 1024 维） |
+| 模型接入 | Spring AI 1.1.7：本地 Ollama（`deepseek-r1:1.5b`）+ 云端 Qwen（OpenAI 兼容网关，`qwen3.8-flash` 对话 / `qwen3.7-text-embedding` 1024 维） |
 | 业务数据 | MySQL（与电商主站共用 `java_shop` 库）、MyBatis-Plus 3.5.10 |
 | 交互形态 | `ChatClient.stream()` + Flux，SSE 逐 Token 返回 |
 | 知识库 | `PagePdfDocumentReader` + `TokenTextSplitter` + `SimpleVectorStore` |

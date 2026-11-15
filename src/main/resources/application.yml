@@ -11,17 +11,17 @@ spring:
       chat:
         model: deepseek-r1:1.5b
     openai:
-      # 百炼 OpenAI 兼容地址，Spring AI 会自动拼接 /v1
-      base-url: https://ws-vqzpmcmwf24e7nlr.cn-beijing.maas.aliyuncs.com/compatible-mode
+      # OpenAI 兼容地址，Spring AI 会自动拼接 /v1
+      base-url: https://maas.qianwenaiapi.com/compatible-mode
       # 环境变量名已从 OPENAI-API-KEY 改为 DASHSCOPE_API_KEY（带短横线的变量名在 PowerShell 里不可用）
       api-key: ${DASHSCOPE_API_KEY:sk-not-configured}
       chat:
         options:
           model: qwen3.8-flash
-      # 向量化模型：text-embedding-v3 默认输出 1024 维
+      # 向量化模型：qwen3.7-text-embedding 输出 1024 维
       embedding:
         options:
-          model: text-embedding-v3
+          model: qwen3.7-text-embedding
 
   # 与电商主站共用同一个库：只有读订单、查商品的权限就够了
   datasource:
