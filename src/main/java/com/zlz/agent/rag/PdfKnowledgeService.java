@@ -51,7 +51,11 @@ public class PdfKnowledgeService {
             Map<String, Object> metadata = new HashMap<>(chunk.getMetadata());
             metadata.put(USER_ID, userId);
             metadata.put("fileName", fileName);
-            return new Document(chunk.getText(), metadata);
+            // 把出处写进正文：检索出来的片段自带【来源】，模型引用时不用再拼元数据
+            // （QuestionAnswerAdvisor 默认模板只注入正文，不会渲染 metadata）
+            Object page = metadata.getOrDefault("page_number", "?");
+            String content = "【来源：" + fileName + " 第" + page + "页】\n" + chunk.getText();
+            return new Document(content, metadata);
         }).toList();
 
         vectorStore.add(tagged);

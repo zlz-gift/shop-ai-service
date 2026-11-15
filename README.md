@@ -51,6 +51,8 @@
 
 多用户隔离：分片写入时把 `userId` 打进元数据，检索时通过 `QuestionAnswerAdvisor.FILTER_EXPRESSION` 传过滤表达式；`userId` 先做 `[A-Za-z0-9_-]{1,32}` 校验再拼接，防止过滤表达式被注入。
 
+引用出处：`QuestionAnswerAdvisor` 的默认模板只把正文注入 prompt，不渲染 document 的 metadata，所以入库时把文件名与页码以「【来源：xxx 第 N 页】」写进分片正文，模型回答时可以直接给出处，不用再猜。
+
 `SimpleVectorStore` 是内存实现，`VectorStoreManager` 负责启动 `load`、关闭 `save`、每次上传后立即 `save`，否则重启就丢向量。
 
 ### 3. 上下文与稳定性
