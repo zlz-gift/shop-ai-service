@@ -1,0 +1,17 @@
+# 构建产物与本地运行痕迹不进镜像上下文，否则 COPY src 会带上一堆没用的东西
+target/
+data/
+.idea/
+.vscode/
+.git/
+.gitignore
+.gitattributes
+mvnw
+mvnw.cmd
+.mvn/
+
+# 密钥与本地配置绝不进镜像
+.env
+.env.*
+!.env.example
+*.log

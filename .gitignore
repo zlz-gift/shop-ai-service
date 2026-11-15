@@ -35,3 +35,10 @@ build/
 ### 运行期产物 ###
 # 内存向量库的落盘文件，每次上传文档都会重新生成
 data/
+
+### 本地配置与密钥 ###
+# docker compose 从这个文件读账号密码与模型 key
+.env
+.env.*
+!.env.example
+*.log

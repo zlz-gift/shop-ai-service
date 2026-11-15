@@ -1,0 +1,29 @@
+services:
+  shop-ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shop-ai-service:1.0.0
+    container_name: shop-ai-service
+    ports:
+      - "8081:8081"
+    # 账号与密钥从 .env 读，仓库里只放 .env.example
+    env_file:
+      - .env
+    environment:
+      # 容器里的 localhost 是容器自己，MySQL 在宿主机上
+      DB_URL: "jdbc:mysql://host.docker.internal:3306/java_shop?serverTimezone=Asia/Shanghai&useSSL=false&useUnicode=true&characterEncoding=utf-8&allowPublicKeyRetrieval=true"
+      RAG_STORE_PATH: /app/data/vector-store.json
+    # Linux 上 host.docker.internal 需要显式映射；Windows / macOS 自带
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # 向量库落盘在宿主机，重建镜像不丢已入库的文档
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/ai/history/chat"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s

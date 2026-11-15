@@ -115,6 +115,40 @@ curl -N "http://localhost:8081/ai/pdf/chat?prompt=七天无理由怎么算&chatI
 
 `docs/星野商城售后政策.pdf` 是自带的演示语料，含七天无理由、运费承担、退款时效、换货、价保、争议处理六节。
 
+## Docker
+
+```bash
+# 1. 准备环境变量（.env 同时被 .gitignore 与 .dockerignore 排除）
+copy .env.example .env          # macOS / Linux: cp .env.example .env
+#   填写 MYSQL_PASSWORD 与 DASHSCOPE_API_KEY
+
+# 2. 构建并启动
+docker compose up -d --build
+
+# 3. 查看日志 / 停止
+docker compose logs -f
+docker compose down
+```
+
+几个刻意为之的地方：
+
+- **两阶段构建**：`maven:3.9-eclipse-temurin-21` 里编译，最终镜像只带 `eclipse-temurin:21-jre-alpine` 和 jar——不含 Maven、不含源码、不含 `~/.m2`。
+- **依赖层缓存**：先只 `COPY pom.xml` 拉依赖，再 `COPY src`，改代码不会重新下载依赖。
+- **国内镜像加速**：`docker/maven-settings.xml` 里配了阿里云镜像，容器内构建不会卡在 central。
+- **数据库地址走环境变量**：容器里的 `localhost` 是容器自己，compose 把 `DB_URL` 指向 `host.docker.internal`（Linux 靠 `extra_hosts: host-gateway`，Windows / macOS 自带）。
+- **向量库挂卷**：`./data` 挂到 `/app/data`，`rag.store-path` 用 `RAG_STORE_PATH` 覆盖，重建镜像不丢已入库的文档。
+- **非 root 运行**：镜像里建了 `app` 用户，`USER app` 启动。
+
+不用 compose 也可以：
+
+```bash
+docker build -t shop-ai-service:1.0.0 .
+docker run -p 8081:8081 --env-file .env \
+  -e DB_URL="jdbc:mysql://host.docker.internal:3306/java_shop?serverTimezone=Asia/Shanghai&useSSL=false" \
+  -v "$PWD/data:/app/data" \
+  shop-ai-service:1.0.0
+```
+
 ## 目录结构
 
 ```
