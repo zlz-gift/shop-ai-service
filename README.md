@@ -130,6 +130,17 @@ src/main/java/com/zlz/agent
 └── tools/        ShopTools：交给模型调用的三个工具
 ```
 
+## 测试
+
+```bash
+mvn test
+```
+
+- `RagFilterOfflineTest`：用桩 `EmbeddingModel` + 捕获型 `ChatModel`，**不联网**验证两件事——① `QuestionAnswerAdvisor` 是否真的把 `FILTER_EXPRESSION` 作用到检索上（对照组两篇文档都进上下文，实验组只剩本用户的文档）；② `SimpleVectorStore` 落盘后由新实例 `load` 仍能检索。
+- `ShopAiApplicationTests`：只验证 Spring 上下文能起来。
+
+分层记忆的压缩逻辑同样用桩模型验过：32 条消息 → 压缩到 20 条、摘要落库、摘要模型只被调用 1 次（说明缓冲带生效、不会每轮都压）。该用例依赖本地 `java_shop` 库，未纳入仓库。
+
 ## 已知限制
 
 这些是明确知道、但当前没做的取舍，列出来是为了划清边界：

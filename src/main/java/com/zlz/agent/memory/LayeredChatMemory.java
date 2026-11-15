@@ -4,7 +4,6 @@ import com.zlz.agent.entity.po.ChatMessage;
 import com.zlz.agent.entity.po.ChatSummary;
 import com.zlz.agent.mapper.ChatMessageMapper;
 import com.zlz.agent.mapper.ChatSummaryMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -12,10 +11,10 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -35,7 +34,6 @@ import java.util.StringJoiner;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class LayeredChatMemory implements ChatMemory {
 
     /**
@@ -57,9 +55,18 @@ public class LayeredChatMemory implements ChatMemory {
     private final ChatMessageMapper messageMapper;
     private final ChatSummaryMapper summaryMapper;
     /**
-     * 用 ObjectProvider 延迟取模型，避免 ChatMemory ← ChatClient 的循环依赖
+     * 摘要用的模型。注入 ChatModel 而不是具体厂商的实现，换模型不影响记忆逻辑。
+     * 显式构造方法上的 @Qualifier 是必要的：容器里有多个 ChatModel，靠参数名匹配不可靠。
      */
-    private final ObjectProvider<OpenAiChatModel> summaryModel;
+    private final ChatModel summaryModel;
+
+    public LayeredChatMemory(ChatMessageMapper messageMapper,
+                             ChatSummaryMapper summaryMapper,
+                             @Qualifier("serviceChatModel") ChatModel summaryModel) {
+        this.messageMapper = messageMapper;
+        this.summaryMapper = summaryMapper;
+        this.summaryModel = summaryModel;
+    }
 
     @Override
     public void add(String conversationId, List<Message> messages) {
@@ -122,8 +129,7 @@ public class LayeredChatMemory implements ChatMemory {
     }
 
     private String summarize(String previousSummary, List<ChatMessage> messages) {
-        OpenAiChatModel model = summaryModel.getIfAvailable();
-        if (model == null) {
+        if (summaryModel == null) {
             return null;
         }
         StringJoiner joiner = new StringJoiner("\n");
@@ -135,7 +141,7 @@ public class LayeredChatMemory implements ChatMemory {
                 new UserMessage("已有摘要：\n" + (StringUtils.hasText(previousSummary) ? previousSummary : "（无）")
                         + "\n\n待总结的新对话：\n" + joiner)
         ));
-        ChatResponse response = model.call(prompt);
+        ChatResponse response = summaryModel.call(prompt);
         if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
             return null;
         }
