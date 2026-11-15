@@ -1,0 +1,46 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: shop-ai-service
+
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: deepseek-r1:1.5b
+    openai:
+      # 百炼 OpenAI 兼容地址，Spring AI 会自动拼接 /v1
+      base-url: https://ws-vqzpmcmwf24e7nlr.cn-beijing.maas.aliyuncs.com/compatible-mode
+      # 环境变量名已从 OPENAI-API-KEY 改为 DASHSCOPE_API_KEY（带短横线的变量名在 PowerShell 里不可用）
+      api-key: ${DASHSCOPE_API_KEY:sk-not-configured}
+      chat:
+        options:
+          model: qwen3.8-flash
+      # 向量化模型：text-embedding-v3 默认输出 1024 维
+      embedding:
+        options:
+          model: text-embedding-v3
+
+  # 与电商主站共用同一个库：只有读订单、查商品的权限就够了
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/java_shop?serverTimezone=Asia/Shanghai&useSSL=false&useUnicode=true&characterEncoding=utf-8&allowPublicKeyRetrieval=true
+    # 库账号密码一律走环境变量，不写进仓库
+    # PowerShell: $env:MYSQL_USER='root'; $env:MYSQL_PASSWORD='你的密码'
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 内存向量库的落盘文件：启动时 load，关闭和每次上传后 save
+rag:
+  store-path: ./data/vector-store.json
+
+logging:
+  level:
+    com.zlz: debug
+    org.springframework.ai.chat.client.advisor: debug
